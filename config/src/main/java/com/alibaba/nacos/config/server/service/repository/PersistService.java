@@ -1330,7 +1330,7 @@ public interface PersistService {
     Map<String, Object> batchInsertOrUpdate(List<ConfigAllInfo> configInfoList, String srcUser, String srcIp,
             Map<String, Object> configAdvanceInfo, Timestamp time, boolean notify, SameConfigPolicy policy)
             throws NacosException;
-    
+
     /**
      * query tenantInfo (namespace) existence based by tenantId.
      *
