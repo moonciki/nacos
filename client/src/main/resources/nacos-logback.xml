@@ -20,8 +20,21 @@
     <nacosClientProperty scope="context" name="logRetainCount" source="JM.LOG.RETAIN.COUNT" defaultValue="7"/>
     <nacosClientProperty scope="context" name="logFileSize" source="JM.LOG.FILE.SIZE" defaultValue="10MB"/>
     <nacosClientProperty scope="context" name="nacosConfigLogLevel" source="com.alibaba.nacos.config.log.level" defaultValue="info"/>
-    
-    
+
+    <property name="color_layout_pattern" value="${CONSOLE_LOG_PATTERN:-%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(${LOG_LEVEL_PATTERN:-%5p}) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n}"/>
+
+    <!--控制台-->
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度 %logger输出日志的logger名 %msg：日志消息，%n是换行符 -->
+            <!--            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{36} : %msg%n</pattern>-->
+            <pattern>${color_layout_pattern}</pattern><!--彩打日志-->
+
+            <!--解决乱码问题-->
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
     <appender name="CONFIG_LOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${logPath}/nacos/config.log</file>
         
@@ -86,7 +99,7 @@
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %p [%-5t:%c{2}] %m%n</pattern>
         </encoder>
     </appender>
-    
+
     <appender name="ASYNC-REMOTE" class="ch.qos.logback.classic.AsyncAppender">
         <discardingThreshold>0</discardingThreshold>
         <queueSize>1024</queueSize>
@@ -119,5 +132,15 @@
         additivity="false">
         <appender-ref ref="ASYNC-NAMING"/>
     </logger>
+
+    <logger name="com.alibaba.nacos.git.server" level="${com.alibaba.nacos.naming.log.level:-info}"
+            additivity="true">
+        <appender-ref ref="CONFIG_LOG_FILE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="stdout" />
+
+    </root>
 
 </configuration>

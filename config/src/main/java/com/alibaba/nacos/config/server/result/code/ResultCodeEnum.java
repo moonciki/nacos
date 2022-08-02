@@ -17,6 +17,7 @@
 package com.alibaba.nacos.config.server.result.code;
 
 import com.alibaba.nacos.common.model.core.IResultCode;
+import com.alibaba.nacos.config.server.exception.WebCode;
 
 /**
  * ResultCodeEnum.
@@ -67,5 +68,26 @@ public enum ResultCodeEnum implements IResultCode {
     @Override
     public String getCodeMsg() {
         return msg;
+    }
+
+    /**
+     * webcode .
+     * @return WebCode
+     */
+    public WebCode info() {
+        WebCode respCode = new WebCode(this.code, this.msg);
+        return respCode;
+    }
+
+    /**
+     * create webCode .
+     * @param reqMsg reqMsg
+     * @return WebCode
+     */
+    public WebCode info(String reqMsg) {
+
+        WebCode respCode = new WebCode(this.code, reqMsg);
+
+        return respCode;
     }
 }

@@ -2313,7 +2313,7 @@ public class EmbeddedStoragePersistServiceImpl implements PersistService {
         }
         return result;
     }
-    
+
     @Override
     public int tenantInfoCountByTenantId(String tenantId) {
         if (Objects.isNull(tenantId)) {

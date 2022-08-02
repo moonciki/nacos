@@ -164,5 +164,5 @@ public class NamespaceController {
     public Boolean deleteNamespace(@RequestParam("namespaceId") String namespaceId) {
         return namespaceOperationService.removeNamespace(namespaceId);
     }
-    
+
 }

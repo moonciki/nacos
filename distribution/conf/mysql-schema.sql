@@ -211,3 +211,23 @@ CREATE TABLE `permissions` (
 INSERT INTO users (username, password, enabled) VALUES ('nacos', '$2a$10$EuWPZHzz32dJN7jexM34MOeYirDdFAZm2kuWj7VEOJhhZkDrxfvUu', TRUE);
 
 INSERT INTO roles (username, role) VALUES ('nacos', 'ROLE_ADMIN');
+
+CREATE TABLE `tenant_git` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `tenant_id` varchar(128) NOT NULL COMMENT '租户字段',
+    `repo_uuid` varchar(60) NOT NULL COMMENT 'git目录uuid',
+    `uri` varchar(300) DEFAULT NULL COMMENT 'git uri',
+    `user_name` varchar(30) DEFAULT NULL COMMENT '用户名',
+    `password` varchar(30) DEFAULT NULL COMMENT '密码（与私钥二选一）',
+    `passphrase` varchar(100) DEFAULT NULL COMMENT '私钥口令',
+    `private_key` text DEFAULT NULL COMMENT 'git私钥',
+    `path` varchar(255) DEFAULT NULL COMMENT '配置文件所在路径',
+    `branch` varchar(50) DEFAULT NULL COMMENT '分支',
+    `gmt_create` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `gmt_modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '修改时间',
+    `sync_time` datetime DEFAULT NULL COMMENT '同步时间',
+    `commit_id` varchar(60) DEFAULT NULL COMMENT '上次同步的git-commit-id',
+    `advance_configure` text DEFAULT NULL COMMENT '高级配置json格式',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin COMMENT='命名空间git仓库配置';

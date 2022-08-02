@@ -16,6 +16,7 @@
 
 package com.alibaba.nacos.config.server.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -107,4 +108,16 @@ public class ConfigMetadata {
     public void setMetadata(List<ConfigExportItem> metadata) {
         this.metadata = metadata;
     }
+
+    /**
+     * add meta item.
+     * @param metaItem metaItem
+     */
+    public void addMetaItem(ConfigExportItem metaItem) {
+        if (metadata == null) {
+            metadata = new ArrayList<>();
+        }
+        metadata.add(metaItem);
+    }
+
 }

@@ -27,17 +27,18 @@ import com.alibaba.nacos.common.utils.Pair;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.config.server.constant.Constants;
 import com.alibaba.nacos.config.server.controller.parameters.SameNamespaceCloneConfigBean;
+import com.alibaba.nacos.config.server.exception.NacosWebException;
 import com.alibaba.nacos.config.server.model.ConfigAdvanceInfo;
 import com.alibaba.nacos.config.server.model.ConfigAllInfo;
 import com.alibaba.nacos.config.server.model.ConfigInfo;
 import com.alibaba.nacos.config.server.model.ConfigInfo4Beta;
 import com.alibaba.nacos.config.server.model.ConfigMetadata;
+import com.alibaba.nacos.config.server.model.ConfigRequestInfo;
 import com.alibaba.nacos.config.server.model.GroupkeyListenserStatus;
 import com.alibaba.nacos.persistence.model.Page;
 import com.alibaba.nacos.config.server.model.SameConfigPolicy;
 import com.alibaba.nacos.config.server.model.SampleResult;
 import com.alibaba.nacos.config.server.model.event.ConfigDataChangeEvent;
-import com.alibaba.nacos.config.server.model.ConfigRequestInfo;
 import com.alibaba.nacos.config.server.model.form.ConfigForm;
 import com.alibaba.nacos.config.server.monitor.MetricsMonitor;
 import com.alibaba.nacos.config.server.result.code.ResultCodeEnum;
@@ -45,7 +46,10 @@ import com.alibaba.nacos.config.server.service.ConfigChangePublisher;
 import com.alibaba.nacos.config.server.service.ConfigOperationService;
 import com.alibaba.nacos.config.server.service.ConfigSubService;
 import com.alibaba.nacos.core.namespace.repository.NamespacePersistService;
+import com.alibaba.nacos.config.server.service.config.AbstractConfigDataReader;
+import com.alibaba.nacos.config.server.service.config.impl.AbstractZipConfigDataReader;
 import com.alibaba.nacos.config.server.service.repository.ConfigInfoBetaPersistService;
+import com.alibaba.nacos.config.server.service.repository.ConfigInfoHandlerService;
 import com.alibaba.nacos.config.server.service.repository.ConfigInfoPersistService;
 import com.alibaba.nacos.config.server.service.trace.ConfigTraceService;
 import com.alibaba.nacos.config.server.utils.GroupKey;
@@ -55,6 +59,9 @@ import com.alibaba.nacos.config.server.utils.RequestUtil;
 import com.alibaba.nacos.config.server.utils.TimeUtils;
 import com.alibaba.nacos.config.server.utils.YamlParserUtil;
 import com.alibaba.nacos.config.server.utils.ZipUtils;
+import com.alibaba.nacos.config.server.vo.ConfigBatchResultVo;
+import com.alibaba.nacos.config.server.vo.ConfigImportDataVo;
+import com.alibaba.nacos.config.server.vo.ConfigImportResultVo;
 import com.alibaba.nacos.core.control.TpsControl;
 import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
 import com.alibaba.nacos.plugin.auth.constant.SignType;
@@ -62,6 +69,7 @@ import com.alibaba.nacos.plugin.encryption.handler.EncryptionHandler;
 import com.alibaba.nacos.sys.utils.InetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -121,7 +129,10 @@ public class ConfigController {
     private final ConfigOperationService configOperationService;
     
     private final ConfigSubService configSubService;
-    
+
+    @Autowired
+    private ConfigInfoHandlerService configInfoHandlerService;
+
     public ConfigController(ConfigServletInner inner, ConfigOperationService configOperationService,
             ConfigSubService configSubService, ConfigInfoPersistService configInfoPersistService,
             NamespacePersistService namespacePersistService,
@@ -588,7 +599,70 @@ public class ConfigController {
         headers.add("Content-Disposition", "attachment;filename=" + fileName);
         return new ResponseEntity<>(ZipUtils.zip(zipItemList), headers, HttpStatus.OK);
     }
-    
+
+    /**
+     * 新的导入接口.
+     * @param request request
+     * @param srcUser srcUser
+     * @param namespace namespace
+     * @param policy policy
+     * @param file file
+     * @return RestResult
+     * @throws NacosException e
+     */
+    public RestResult<ConfigBatchResultVo> importAndPublishConfigNew(HttpServletRequest request,
+                                                                     @RequestParam(value = "src_user", required = false) String srcUser,
+                                                                     @RequestParam(value = "namespace", required = false) String namespace,
+                                                                     @RequestParam(value = "policy", defaultValue = "ABORT") SameConfigPolicy policy,
+                                                                     MultipartFile file) throws NacosException {
+
+        ConfigBatchResultVo importResultVo = new ConfigBatchResultVo();
+        importResultVo.setSuccCount(0);
+
+        if (Objects.isNull(file)) {
+            return RestResultUtils.buildResult(ResultCodeEnum.DATA_EMPTY, importResultVo);
+        }
+        namespace = NamespaceUtil.processNamespaceParameter(namespace);
+        if (StringUtils.isNotBlank(namespace) && namespacePersistService.tenantInfoCountByTenantId(namespace) <= 0) {
+            return RestResultUtils.buildResult(ResultCodeEnum.NAMESPACE_NOT_EXIST, importResultVo);
+        }
+
+        try {
+            //List<ConfigAllInfo> dbConfigList = persistService.findAllConfigInfo4Export(null, null, namespace, null, null);
+            AbstractConfigDataReader configReader = AbstractZipConfigDataReader.getConfigReader(namespace, file);
+
+            try {
+                ConfigImportDataVo configImportDataVo = configReader.readConfigDataBatch(null);
+
+                //开始处理文件数据
+                final String srcIp = RequestUtil.getRemoteIp(request);
+                String requestIpApp = RequestUtil.getAppName(request);
+                final Timestamp time = TimeUtils.getCurrentTime();
+
+                ConfigImportResultVo batchImportResult = configInfoHandlerService.batchInsertOrUpdate(configImportDataVo, srcUser, srcIp,
+                        null, time, false, policy);
+
+                importResultVo = configInfoHandlerService.notifyConfigAndReturn(batchImportResult, time, requestIpApp);
+
+                return RestResultUtils.success("导入成功", importResultVo);
+
+            } catch (NacosWebException e) {
+                //当文件解析错误时，会通过该异常返回信息
+                LOGGER.warn("readConfigDataBatch_error : ", e);
+
+                Integer errorCode = e.getErrorCode();
+                String errorMsg = e.getErrorMsg();
+
+                return RestResultUtils.failed(errorCode, importResultVo, errorMsg);
+            }
+
+        } catch (IOException e) {
+            LOGGER.error("parsing data failed", e);
+            return RestResultUtils.buildResult(ResultCodeEnum.PARSING_DATA_FAILED, importResultVo);
+        }
+
+    }
+
     /**
      * Execute import and publish config operation.
      *
