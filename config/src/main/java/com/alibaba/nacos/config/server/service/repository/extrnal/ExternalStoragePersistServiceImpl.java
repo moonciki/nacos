@@ -235,7 +235,7 @@ public class ExternalStoragePersistServiceImpl implements PersistService {
             final Timestamp time, final Map<String, Object> configAdvanceInfo, final boolean notify) {
         boolean result = tjt.execute(status -> {
             try {
-                ConfigInfo oldConfigInfo = findConfigInfo(configInfo.getDataId(), configInfo.getGroup(),
+                ConfigAllInfo oldConfigInfo = findConfigAllInfo(configInfo.getDataId(), configInfo.getGroup(),
                         configInfo.getTenant());
                 String appNameTmp = oldConfigInfo.getAppName();
                 /*
@@ -245,7 +245,16 @@ public class ExternalStoragePersistServiceImpl implements PersistService {
                 if (configInfo.getAppName() == null) {
                     configInfo.setAppName(appNameTmp);
                 }
-                updateConfigInfoAtomic(configInfo, srcIp, srcUser, time, configAdvanceInfo);
+
+                Map<String, Object> configMapTmp = configAdvanceInfo;
+                if (configMapTmp == null) {
+                    configMapTmp = new HashMap<>();
+                }
+                if (configMapTmp.get("desc") == null) {
+                    configMapTmp.put("desc", oldConfigInfo.getDesc());
+                }
+
+                updateConfigInfoAtomic(configInfo, srcIp, srcUser, time, configMapTmp);
                 String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
                 if (configTags != null) {
                     // delete all tags and then recreate

@@ -273,7 +273,7 @@ public class EmbeddedStoragePersistServiceImpl implements PersistService {
     public void updateConfigInfo(final ConfigInfo configInfo, final String srcIp, final String srcUser,
             final Timestamp time, final Map<String, Object> configAdvanceInfo, final boolean notify) {
         try {
-            ConfigInfo oldConfigInfo = findConfigInfo(configInfo.getDataId(), configInfo.getGroup(),
+            ConfigAllInfo oldConfigInfo = this.findConfigAllInfo(configInfo.getDataId(), configInfo.getGroup(),
                     configInfo.getTenant());
             
             final String tenantTmp =
@@ -287,8 +287,16 @@ public class EmbeddedStoragePersistServiceImpl implements PersistService {
             if (configInfo.getAppName() == null) {
                 configInfo.setAppName(appNameTmp);
             }
-            
-            updateConfigInfoAtomic(configInfo, srcIp, srcUser, time, configAdvanceInfo);
+
+            Map<String, Object> configMapTmp = configAdvanceInfo;
+            if (configMapTmp == null) {
+                configMapTmp = new HashMap<>();
+            }
+            if (configMapTmp.get("desc") == null) {
+                configMapTmp.put("desc", oldConfigInfo.getDesc());
+            }
+
+            updateConfigInfoAtomic(configInfo, srcIp, srcUser, time, configMapTmp);
             
             String configTags = configAdvanceInfo == null ? null : (String) configAdvanceInfo.get("config_tags");
             if (configTags != null) {
