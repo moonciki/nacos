@@ -17,7 +17,7 @@
 package com.alibaba.nacos.git.server.git.support;
 
 import com.alibaba.nacos.common.utils.StringUtils;
-import com.alibaba.nacos.git.server.git.env.GitEnvironmentProperties;
+import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
 import com.alibaba.nacos.git.server.git.ssh.PropertiesBasedSshTransportConfigCallback;
 import org.eclipse.jgit.api.TransportConfigCallback;
 
@@ -32,7 +32,7 @@ public class TransportConfigCallbackFactory {
      * @param environmentProperties environmentProperties
      * @return TransportConfigCallback
      */
-    public static TransportConfigCallback build(GitEnvironmentProperties environmentProperties) {
+    public static TransportConfigCallback build(JgitConfigProperty environmentProperties) {
 
         // If the currently configured repository is a Google Cloud Source repository
         // we use GoogleCloudSourceSupport.
@@ -52,7 +52,7 @@ public class TransportConfigCallbackFactory {
         return transportConfigCallback;
     }
 
-    private static TransportConfigCallback buildSshTransportConfigCallback(GitEnvironmentProperties gitEnvironmentProperties) {
+    private static TransportConfigCallback buildSshTransportConfigCallback(JgitConfigProperty gitEnvironmentProperties) {
 
         if (gitEnvironmentProperties == null) {
             return null;

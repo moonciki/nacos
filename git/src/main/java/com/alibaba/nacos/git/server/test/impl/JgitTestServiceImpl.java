@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.service.impl;
+package com.alibaba.nacos.git.server.test.impl;
 
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.git.server.git.opt.GitEnvironmentRepository;
-import com.alibaba.nacos.git.server.vo.GitCommitVo;
+import com.alibaba.nacos.git.server.jgit.opt.JgitEnvironmentRepository;
 import com.alibaba.nacos.git.server.model.TenantGit;
-import com.alibaba.nacos.git.server.service.JgitOperationService;
+import com.alibaba.nacos.git.server.test.JgitTestService;
+import com.alibaba.nacos.git.server.vo.GitCommitVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -35,16 +36,16 @@ import java.util.Map;
  * @date 2022/6/16 13:37
  */
 @Service
-public class JgitOperationServiceImpl implements JgitOperationService {
+public class JgitTestServiceImpl implements JgitTestService {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(JgitOperationServiceImpl.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(JgitTestServiceImpl.class);
 
     boolean initialized = false;
 
     /**
      * jgit repository cache .
      */
-    private static final Map<String, GitEnvironmentRepository> JGIT_REPOSITORY_MAP = new HashMap<>();
+    private static final Map<String, JgitEnvironmentRepository> JGIT_REPOSITORY_MAP = new HashMap<>();
 
     @Override
     public void clearRepository(TenantGit tenantGit) {
@@ -55,6 +56,9 @@ public class JgitOperationServiceImpl implements JgitOperationService {
         GitEnvironmentRepository gitEnvironmentRepository = this.getJGitRepository(tenantGit);
 
         gitEnvironmentRepository.clear();
+
+        String tenantId = tenantGit.getTenantId();
+        JGIT_REPOSITORY_MAP.remove(tenantId);
 
         LOGGER.info("clearRepository : " + tenantGit.getTenantId());
 
@@ -77,13 +81,13 @@ public class JgitOperationServiceImpl implements JgitOperationService {
      * @param tenantGit tenantGit
      * @return JGitEnvironmentRepository env
      */
-    private GitEnvironmentRepository getJGitRepository(TenantGit tenantGit) {
+    private JgitEnvironmentRepository getJgitRepository(TenantGit tenantGit) {
 
         String tenantId = tenantGit.getTenantId();
 
-        GitEnvironmentRepository gitEnvironmentRepository = JGIT_REPOSITORY_MAP.get(tenantId);
+        JgitEnvironmentRepository gitEnvironmentRepository = JGIT_REPOSITORY_MAP.get(tenantId);
         if (gitEnvironmentRepository == null) {
-            gitEnvironmentRepository = new GitEnvironmentRepository(tenantGit);
+            gitEnvironmentRepository = new JgitEnvironmentRepository(tenantGit);
             JGIT_REPOSITORY_MAP.put(tenantId, gitEnvironmentRepository);
         }
         return gitEnvironmentRepository;
@@ -106,7 +110,7 @@ public class JgitOperationServiceImpl implements JgitOperationService {
 
         GitEnvironmentRepository jgitRepo = this.getJGitRepository(tenantGit);
 
-        File repoFolder = jgitRepo.getConfigRepoFolder();
+        File repoFolder = jgitRepo.getLocalRepoFolder();
 
         String path = tenantGit.getPath();
 

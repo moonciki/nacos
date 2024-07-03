@@ -33,6 +33,9 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <jgit.version>5.13.2.202306221912-r</jgit.version>
+
     </properties>
     
     <dependencies>
@@ -47,18 +50,32 @@
             <artifactId>nacos-naming</artifactId>
         </dependency>
 
-        <!-- git need -->
+        <!-- ========== jgit support ========== -->
+
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
+            <version>${jgit.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit.http.apache</artifactId>
+            <version>${jgit.version}</version>
+            <scope>compile</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
+            <version>${jgit.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
+            <version>${jgit.version}</version>
         </dependency>
 
     </dependencies>

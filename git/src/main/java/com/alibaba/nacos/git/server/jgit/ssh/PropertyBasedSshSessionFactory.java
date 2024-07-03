@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.git.ssh;
+package com.alibaba.nacos.git.server.jgit.ssh;
 
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
@@ -25,6 +25,7 @@ import com.jcraft.jsch.ProxyHTTP;
 import com.jcraft.jsch.Session;
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
 import org.eclipse.jgit.transport.OpenSshConfig;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
 import org.eclipse.jgit.util.FS;
 
 /**
@@ -35,7 +36,7 @@ import org.eclipse.jgit.util.FS;
  * @author William Tran
  * @author Ollie Hughes
  */
-public class PropertyBasedSshSessionFactory extends JschConfigSessionFactory {
+public class PropertyBasedSshSessionFactory extends SshdSessionFactory {
 
     private static final String STRICT_HOST_KEY_CHECKING = "StrictHostKeyChecking";
 

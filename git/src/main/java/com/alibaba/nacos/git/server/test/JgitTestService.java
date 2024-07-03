@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.service;
+package com.alibaba.nacos.git.server.test;
 
 import com.alibaba.nacos.git.server.model.TenantGit;
 import com.alibaba.nacos.git.server.vo.GitCommitVo;
@@ -26,7 +26,7 @@ import java.io.File;
  * @author ysq
  * @date 2022/6/16 13:36
  */
-public interface JgitOperationService {
+public interface JgitTestService {
 
     /**
      * remove jgit repo cache .

@@ -29,7 +29,7 @@ import static org.springframework.util.StringUtils.hasText;
  *
  * @author Don Laidlaw
  * @author Gareth Clay
- * @author Shiqi Yue
+ * @author yueshiqi
  *
  */
 public class GitCredentialsProviderFactory {
@@ -55,9 +55,10 @@ public class GitCredentialsProviderFactory {
                                          boolean skipSslValidation) {
         CredentialsProvider provider = null;
 
+        /*
         if (hasText(username)) {
             this.logger.debug("Constructing UsernamePasswordCredentialsProvider for URI " + uri);
-            provider = new UsernamePasswordCredentialsProvider(username, password.toCharArray());
+            provider = new UsernamePasswordCredentialsProvider(username, password);
         } else if (hasText(username) && !hasText(passphrase)) {
             // useful for token based login gh-1602
             // see
@@ -65,6 +66,14 @@ public class GitCredentialsProviderFactory {
             this.logger.debug("Constructing UsernamePasswordCredentialsProvider for URI " + uri);
             provider = new UsernamePasswordCredentialsProvider(username, (String) null);
         } else if (hasText(passphrase)) {
+            this.logger.debug("Constructing PassphraseCredentialsProvider for URI " + uri);
+            provider = new PassphraseCredentialsProvider(passphrase);
+        }
+        */
+        if(hasText(username) && hasText(password)) {
+            this.logger.debug("Constructing UsernamePasswordCredentialsProvider for URI " + uri);
+            provider = new UsernamePasswordCredentialsProvider(username, password);
+        } else if (hasText(passphrase)){
             this.logger.debug("Constructing PassphraseCredentialsProvider for URI " + uri);
             provider = new PassphraseCredentialsProvider(passphrase);
         }

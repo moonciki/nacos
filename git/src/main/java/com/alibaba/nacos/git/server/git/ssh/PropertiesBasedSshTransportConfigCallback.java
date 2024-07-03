@@ -16,7 +16,7 @@
 
 package com.alibaba.nacos.git.server.git.ssh;
 
-import com.alibaba.nacos.git.server.git.env.GitEnvironmentProperties;
+import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
 import com.jcraft.jsch.JSch;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.transport.SshTransport;
@@ -24,16 +24,16 @@ import org.eclipse.jgit.transport.Transport;
 
 /**
  * Configure JGit transport command to use a SSH session factory that is configured using
- * properties defined in {@link GitEnvironmentProperties}.
+ * properties defined in {@link JgitConfigProperty}.
  *
  * @author Dylan Roberts
  * @author Shiqi Yue
  */
 public class PropertiesBasedSshTransportConfigCallback implements TransportConfigCallback {
 
-    private GitEnvironmentProperties sshUriProperties;
+    private JgitConfigProperty sshUriProperties;
 
-    public PropertiesBasedSshTransportConfigCallback(GitEnvironmentProperties sshUriProperties) {
+    public PropertiesBasedSshTransportConfigCallback(JgitConfigProperty sshUriProperties) {
         this.sshUriProperties = sshUriProperties;
     }
 
@@ -41,6 +41,7 @@ public class PropertiesBasedSshTransportConfigCallback implements TransportConfi
     public void configure(Transport transport) {
         if (transport instanceof SshTransport) {
             SshTransport sshTransport = (SshTransport) transport;
+
             //sshTransport.setCredentialsProvider(new CustomCredentialProvider(passphrase));
 
             //sshTransport.setSshSessionFactory(new SshdSessionFactory());

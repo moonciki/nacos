@@ -22,8 +22,8 @@ import com.alibaba.nacos.common.model.RestResultUtils;
 import com.alibaba.nacos.config.server.exception.NacosWebException;
 import com.alibaba.nacos.config.server.utils.RequestUtil;
 import com.alibaba.nacos.config.server.vo.ConfigImportResultVo;
-import com.alibaba.nacos.git.server.enums.ResponseEnum;
-import com.alibaba.nacos.git.server.service.GitConfigService;
+import com.alibaba.nacos.git.server.enums.GitResponseEnum;
+import com.alibaba.nacos.git.server.service.git.GitConfigService;
 import com.alibaba.nacos.git.server.vo.GitCommitStatus;
 import com.alibaba.nacos.git.server.vo.TenantGitVo;
 import com.alibaba.nacos.plugin.auth.constant.ActionTypes;
@@ -31,7 +31,7 @@ import com.alibaba.nacos.plugin.auth.constant.SignType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -60,7 +60,7 @@ public class GitConfigController {
     public RestResult<TenantGitVo> getNamespaceGit(String tenantId) {
 
         if (tenantId == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[tenantId] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[tenantId] must not be null!"));
         }
         TenantGitVo namespaceGit = gitConfigService.getBaseNamespaceGit(tenantId);
         return RestResultUtils.success(namespaceGit);
@@ -72,10 +72,10 @@ public class GitConfigController {
      */
     @PostMapping("/saveNamespaceGit")
     @Secured(action = ActionTypes.WRITE, signType = SignType.CONFIG)
-    public RestResult<TenantGitVo> saveNamespaceGit(TenantGitVo tenantGitVo) {
+    public RestResult<TenantGitVo> saveNamespaceGit(@RequestBody TenantGitVo tenantGitVo) {
 
         if (tenantGitVo == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("params error!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("params error!"));
         }
 
         TenantGitVo namespaceGit = gitConfigService.saveNamespaceGit(tenantGitVo);
@@ -86,12 +86,12 @@ public class GitConfigController {
      * delete namespace git config.
      * @return RestResult
      */
-    @PutMapping("/removeNamespaceGit")
+    @PostMapping("/removeNamespaceGit")
     @Secured(action = ActionTypes.WRITE, signType = SignType.CONFIG)
     public RestResult removeNamespaceGit(String tenantId) {
 
         if (tenantId == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[tenantId] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[tenantId] must not be null!"));
         }
 
         gitConfigService.removeNamespaceGit(tenantId);
@@ -107,7 +107,7 @@ public class GitConfigController {
     public RestResult<GitCommitStatus> getCommitStatus(String tenantId) {
 
         if (tenantId == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[tenantId] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[tenantId] must not be null!"));
         }
 
         GitCommitStatus commitStatus = gitConfigService.getCommitStatus(tenantId);
@@ -124,7 +124,7 @@ public class GitConfigController {
     public RestResult<ConfigImportResultVo> syncConfig(HttpServletRequest request, String srcUser, String tenantId) {
 
         if (tenantId == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[tenantId] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[tenantId] must not be null!"));
         }
 
         final String srcIp = RequestUtil.getRemoteIp(request);

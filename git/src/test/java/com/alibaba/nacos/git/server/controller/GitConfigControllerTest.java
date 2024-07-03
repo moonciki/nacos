@@ -17,7 +17,7 @@
 package com.alibaba.nacos.git.server.controller;
 
 import com.alibaba.nacos.common.model.RestResult;
-import com.alibaba.nacos.git.server.service.GitConfigService;
+import com.alibaba.nacos.git.server.service.git.GitConfigService;
 import com.alibaba.nacos.git.server.vo.TenantGitVo;
 import com.alibaba.nacos.sys.env.EnvUtil;
 import org.junit.Assert;
@@ -99,6 +99,8 @@ public class GitConfigControllerTest {
 
     @Test
     public void testSaveNamespaceGit() {
+
+        String
 
         TenantGitVo tenantGitVo = new TenantGitVo();
         tenantGitVo.setTenantId("");

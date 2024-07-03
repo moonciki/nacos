@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.service.impl;
+package com.alibaba.nacos.git.server.service.git.impl;
 
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.config.server.exception.NacosWebException;
@@ -22,16 +22,17 @@ import com.alibaba.nacos.config.server.model.ConfigAllInfo;
 import com.alibaba.nacos.config.server.model.SameConfigPolicy;
 import com.alibaba.nacos.config.server.service.config.AbstractConfigDataReader;
 import com.alibaba.nacos.config.server.service.repository.ConfigInfoHandlerService;
-import com.alibaba.nacos.config.server.service.repository.PersistService;
+import com.alibaba.nacos.config.server.service.repository.ConfigInfoPersistService;
 import com.alibaba.nacos.config.server.utils.TimeUtils;
 import com.alibaba.nacos.config.server.vo.ConfigImportDataVo;
 import com.alibaba.nacos.config.server.vo.ConfigImportResultVo;
 import com.alibaba.nacos.git.server.dao.TenantGitDao;
 import com.alibaba.nacos.git.server.dao.impl.BaseExternalDaompl;
-import com.alibaba.nacos.git.server.enums.ResponseEnum;
+import com.alibaba.nacos.git.server.enums.GitAuthTypeEnum;
+import com.alibaba.nacos.git.server.enums.GitResponseEnum;
 import com.alibaba.nacos.git.server.model.TenantGit;
-import com.alibaba.nacos.git.server.service.GitConfigService;
-import com.alibaba.nacos.git.server.service.JgitOperationService;
+import com.alibaba.nacos.git.server.service.git.GitConfigService;
+import com.alibaba.nacos.git.server.service.git.JgitOperationService;
 import com.alibaba.nacos.git.server.service.config.impl.FolderConfigDataReader;
 import com.alibaba.nacos.git.server.vo.GitCommitStatus;
 import com.alibaba.nacos.git.server.vo.GitCommitVo;
@@ -62,8 +63,9 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
     @Autowired
     private JgitOperationService jgitOperationService;
 
-    @Autowired(required = false)
-    private PersistService persistService;
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    @Autowired
+    private ConfigInfoPersistService configInfoPersistService;
 
     @Autowired
     private ConfigInfoHandlerService configInfoHandlerService;
@@ -86,9 +88,9 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
 
         if (StringUtils.isNotBlank(privateKey)) {
             //auth by privateKey
-            tenantGitBase.setAuthType(2);
+            tenantGitBase.setAuthType(GitAuthTypeEnum.privateKey.getCode());
         } else {
-            tenantGitBase.setAuthType(1);
+            tenantGitBase.setAuthType(GitAuthTypeEnum.password.getCode());
         }
 
         tenantGitBase.setPassphrase(null);
@@ -100,20 +102,116 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
 
     /**
      * check param .
+     *
      * @param tenantGitVo tenantGitVo
      */
     private void checkSaveParam(TenantGitVo tenantGitVo) {
 
+        Integer authType = tenantGitVo.getAuthType();
+        if (authType == null) {
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[authType] must not be null!"));
+        }
+
         String tenantId = tenantGitVo.getTenantId();
 
         if (tenantId == null) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[tenantId] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[tenantId] must not be null!"));
         }
         String uri = tenantGitVo.getUri();
         if (StringUtils.isBlank(uri)) {
-            throw NacosWebException.createException(ResponseEnum.request_error.info("[uri] must not be null!"));
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[uri] must not be null!"));
         }
 
+        String privateKey = tenantGitVo.getPrivateKey();
+        String password = tenantGitVo.getPassword();
+
+        if (StringUtils.isNotBlank(privateKey) && StringUtils.isNotBlank(password)) {
+            //不能同时设置
+            throw NacosWebException.createException(GitResponseEnum.request_error.info("[privateKey] or [password] cannot be set at the same time!"));
+        }
+
+    }
+
+    /**
+     * 新增.
+     *
+     * @param tenantGitVo tenantGitVo
+     */
+    private TenantGit insertTenantGit(TenantGitVo tenantGitVo) {
+
+        TenantGit tenantGitReq = new TenantGit();
+        BeanUtils.copyProperties(tenantGitVo, tenantGitReq);
+
+        String userName = tenantGitReq.getUserName();
+        String password = tenantGitReq.getPassword();
+        String privateKey = tenantGitReq.getPrivateKey();
+
+        if (StringUtils.isBlank(privateKey)) {
+            if (StringUtils.isBlank(userName) || StringUtils.isBlank(password)) {
+                throw NacosWebException.createException(GitResponseEnum.request_error
+                        .info("[userName], [password] or [privateKey] must not be null!"));
+            }
+        }
+
+        //insert
+        tenantGitDao.insertNamespaceGit(tenantGitReq);
+
+        return tenantGitReq;
+    }
+
+    /**
+     * 判断是否使用原来的字段值.
+     *
+     * @param keepFlag keepFlag
+     * @return boolean
+     */
+    private boolean fieldKeep(Integer keepFlag) {
+
+        if (keepFlag != null && keepFlag == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 修改.
+     *
+     * @param tenantGitVo tenantGitVo
+     * @param dbTenantGit dbTenantGit
+     */
+    private TenantGit updateTenantGit(TenantGitVo tenantGitVo, TenantGit dbTenantGit) {
+
+        Integer authType = tenantGitVo.getAuthType();
+
+        TenantGit tenantGitReq = new TenantGit();
+        BeanUtils.copyProperties(tenantGitVo, tenantGitReq);
+
+        if (GitAuthTypeEnum.privateKey.codeEquals(authType)) {
+            //私钥登录
+            tenantGitReq.setPassword(null);
+
+            //没有修改的情况
+            if (this.fieldKeep(tenantGitVo.getPrivateKeyKeep())) {
+                tenantGitReq.setPrivateKey(dbTenantGit.getPrivateKey());
+            }
+
+            if (this.fieldKeep(tenantGitVo.getPassphraseKeep())) {
+                tenantGitReq.setPassphrase(dbTenantGit.getPassphrase());
+            }
+        } else {
+            //密码登录
+            tenantGitReq.setPrivateKey(null);
+            tenantGitReq.setPassphrase(null);
+
+            if (this.fieldKeep(tenantGitVo.getPasswordKeep())) {
+                tenantGitReq.setPassword(dbTenantGit.getPassword());
+            }
+        }
+
+        //update
+        tenantGitDao.updateNamespaceGit(tenantGitReq);
+
+        return tenantGitReq;
     }
 
     @Override
@@ -121,44 +219,20 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
 
         this.checkSaveParam(tenantGitVo);
 
-        TenantGit tenantGitReq = new TenantGit();
-        BeanUtils.copyProperties(tenantGitVo, tenantGitReq);
-
-        String tenantId = tenantGitReq.getTenantId();
+        String tenantId = tenantGitVo.getTenantId();
 
         TenantGit dbTenantGit = tenantGitDao.getFullTenantGit(tenantId);
 
-        Long id = tenantGitReq.getId();
-
-        String userName = tenantGitReq.getUserName();
-        String password = tenantGitReq.getPassword();
-        String privateKey = tenantGitReq.getPrivateKey();
-
         if (dbTenantGit == null) {
 
-            if (StringUtils.isBlank(privateKey)) {
-                if (StringUtils.isBlank(userName) || StringUtils.isBlank(password)) {
-                    throw NacosWebException.createException(ResponseEnum.request_error
-                            .info("[userName], [password] or [privateKey] must not be null!"));
-                }
-            }
-
-            //insert
-            tenantGitDao.insertNamespaceGit(tenantGitReq);
+            this.insertTenantGit(tenantGitVo);
 
         } else {
 
-            if (StringUtils.isBlank(privateKey) && StringUtils.isBlank(password)) {
-                //都为空时，没变化
-                tenantGitReq.setPrivateKey(dbTenantGit.getPrivateKey());
-                tenantGitReq.setPassword(dbTenantGit.getPrivateKey());
-            }
+            this.updateTenantGit(tenantGitVo, dbTenantGit);
 
-            //update
-            tenantGitDao.updateNamespaceGit(tenantGitReq);
             //移除git repo
             jgitOperationService.clearRepository(dbTenantGit);
-
         }
 
         TenantGitVo gitResult = this.getBaseNamespaceGit(tenantId);
@@ -208,10 +282,11 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
 
     /**
      * import config data with folder.
-     * @param dbTenantGit dbTenantGit
+     *
+     * @param dbTenantGit  dbTenantGit
      * @param configFolder configFolder
-     * @param srcUser srcUser
-     * @param srcIp srcIp
+     * @param srcUser      srcUser
+     * @param srcIp        srcIp
      * @param requestIpApp requestIpApp
      * @return ConfigBatchResultVo
      */
@@ -219,7 +294,7 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
 
         String namespace = dbTenantGit.getTenantId();
 
-        List<ConfigAllInfo> dbConfigList = persistService.findAllConfigInfo4Export(null, null, namespace, null, null);
+        List<ConfigAllInfo> dbConfigList = configInfoPersistService.findAllConfigInfo4Export(null, null, namespace, null, null);
         AbstractConfigDataReader configReader = FolderConfigDataReader.getConfigReader(namespace, configFolder);
 
         ConfigImportDataVo configImportDataVo = configReader.readConfigDataBatch(dbConfigList);
@@ -266,7 +341,7 @@ public class GitConfigServiceImpl<E> extends BaseExternalDaompl implements GitCo
             File configFolder = jgitOperationService.getConfigFolder(dbTenantGit);
 
             if (!configFolder.exists()) {
-                throw NacosWebException.createException(ResponseEnum.request_error.info("git repository don't exist!"));
+                throw NacosWebException.createException(GitResponseEnum.request_error.info("git repository don't exist!"));
             }
 
             importResultVo = this.importConfigWithFolder(dbTenantGit, configFolder, srcUser, srcIp, requestIpApp);

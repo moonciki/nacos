@@ -1,11 +1,11 @@
 /*
- * Copyright 1999-2021 Alibaba Group Holding Ltd.
+ * Copyright 2013-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.git.opt;
+package com.alibaba.nacos.git.server.jgit.opt;
 
 import com.alibaba.nacos.common.utils.StringUtils;
-import com.alibaba.nacos.git.server.enums.GitResponseEnum;
-import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
 import com.alibaba.nacos.git.server.constant.NacosGitConstant;
+import com.alibaba.nacos.git.server.enums.GitResponseEnum;
 import com.alibaba.nacos.git.server.exception.NacosGitException;
-import com.alibaba.nacos.git.server.git.support.GitCredentialsProviderFactory;
 import com.alibaba.nacos.git.server.git.support.TransportConfigCallbackFactory;
+import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
+import com.alibaba.nacos.git.server.jgit.support.JgitCredentialsProviderFactory;
 import com.alibaba.nacos.git.server.model.TenantGit;
 import com.alibaba.nacos.git.server.vo.GitCommitVo;
 import org.eclipse.jgit.api.*;
@@ -36,11 +36,7 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.FetchResult;
-import org.eclipse.jgit.transport.ReceiveCommand;
-import org.eclipse.jgit.transport.TagOpt;
-import org.eclipse.jgit.transport.TrackingRefUpdate;
+import org.eclipse.jgit.transport.*;
 import org.eclipse.jgit.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,13 +46,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static java.lang.String.format;
 import static org.eclipse.jgit.transport.ReceiveCommand.Type.DELETE;
@@ -72,11 +62,11 @@ import static org.eclipse.jgit.transport.ReceiveCommand.Type.DELETE;
  * @author Ryan Lynch
  * @author Gareth Clay
  * @author ChaoDong Xi
- * @author ShiQi Yue
+ * @author yueshiqi
  */
-public class GitEnvironmentRepository {
+public class JgitEnvironmentRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GitEnvironmentRepository.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(JgitEnvironmentRepository.class);
 
     /**
      * Error message for URI for git repo.
@@ -93,12 +83,6 @@ public class GitEnvironmentRepository {
 
     private boolean cloneSubmodules = false;
 
-    /**
-     * Factory used to create the credentials provider to use to connect to the Git
-     * repository.
-     */
-    private GitCredentialsProviderFactory gitCredentialsProviderFactory;
-
     /* ================================ local config ================================ */
 
     private JgitConfigProperty jgitEnvironmentProperties;
@@ -109,43 +93,38 @@ public class GitEnvironmentRepository {
     private TransportConfigCallback transportConfigCallback;
 
     /** git repo folder. **/
-    private File localRepoFolder;
+    private File configRepoFolder;
 
     private TenantGit tenantGit;
 
     /** 分支. **/
     private String branch;
 
-    public GitEnvironmentRepository(TenantGit tenantGit) {
-        gitCredentialsProviderFactory = new GitCredentialsProviderFactory();
-
+    public JgitEnvironmentRepository(TenantGit tenantGit) {
         this.tenantGit = tenantGit;
 
         String repoUuid = tenantGit.getRepoUuid();
-
-        String localRepoDir = NacosGitConstant.GIT_CONFIG_REPO_DIR;
-
-        this.localRepoFolder = new File(localRepoDir, REPO_PROFIX + repoUuid);
-
         this.branch = tenantGit.getBranch();
-
         if (StringUtils.isBlank(branch)) {
             this.branch = DEFAULT_LABEL;
         }
+
+        String gitConfigRepoDir = NacosGitConstant.GIT_CONFIG_REPO_DIR;
+
+        this.configRepoFolder = new File(gitConfigRepoDir, REPO_PROFIX + repoUuid);
 
         this.jgitEnvironmentProperties = JgitConfigProperty.loadProperties(tenantGit);
 
         this.transportConfigCallback = TransportConfigCallbackFactory.build(jgitEnvironmentProperties);
 
-        //configRepoDir = repoDir.getAbsolutePath();
     }
 
-    public File getLocalRepoFolder() {
-        return localRepoFolder;
+    public File getConfigRepoFolder() {
+        return configRepoFolder;
     }
 
     public String getConfigRepoPath() {
-        return localRepoFolder.getAbsolutePath();
+        return configRepoFolder.getAbsolutePath();
     }
 
     public TransportConfigCallback getTransportConfigCallback() {
@@ -312,7 +291,7 @@ public class GitEnvironmentRepository {
             if (git != null) {
                 git.close();
             }
-            git = this.openGitRepository(localRepoFolder);
+            git = this.openGitRepository(configRepoFolder);
 
             // Check if git points to valid repository and default label is not empty or
             // null.
@@ -583,7 +562,7 @@ public class GitEnvironmentRepository {
         final String gitTmp = ".git";
 
         if (new File(this.getConfigRepoPath(), gitTmp).exists()) {
-            return this.openGitRepository(localRepoFolder);
+            return this.openGitRepository(configRepoFolder);
         } else {
             return this.copyRepository();
         }
@@ -599,11 +578,11 @@ public class GitEnvironmentRepository {
     private synchronized Git copyRepository() throws IOException, GitAPIException {
         deleteBaseDirIfExists();
 
-        if (!localRepoFolder.exists()) {
-            localRepoFolder.mkdirs();
+        if (!configRepoFolder.exists()) {
+            configRepoFolder.mkdirs();
         }
 
-        Assert.state(localRepoFolder.exists(), "Could not create basedir: " + getConfigRepoPath());
+        Assert.state(configRepoFolder.exists(), "Could not create basedir: " + getConfigRepoPath());
         if (tenantGit.getUri().startsWith(FILE_URI_PREFIX)) {
             return copyFromLocalRepository();
         } else {
@@ -637,7 +616,7 @@ public class GitEnvironmentRepository {
     private Git cloneToBasedir() throws GitAPIException {
         CloneCommand clone = this.getCloneCommandByCloneRepository()
                 .setURI(tenantGit.getUri())
-                .setDirectory(localRepoFolder);
+                .setDirectory(configRepoFolder);
         this.configureCommand(clone);
 
         try {
@@ -650,8 +629,8 @@ public class GitEnvironmentRepository {
     }
 
     private void deleteBaseDirIfExists() {
-        if (localRepoFolder.exists()) {
-            for (File file : localRepoFolder.listFiles()) {
+        if (configRepoFolder.exists()) {
+            for (File file : configRepoFolder.listFiles()) {
                 try {
                     FileUtils.delete(file, FileUtils.RECURSIVE);
                 } catch (IOException e) {
@@ -674,8 +653,10 @@ public class GitEnvironmentRepository {
     }
 
     private CredentialsProvider getCredentialsProvider() {
-        return this.gitCredentialsProviderFactory.createFor(tenantGit.getUri(), tenantGit.getUserName(), tenantGit.getPassword(),
+        CredentialsProvider credentials = JgitCredentialsProviderFactory.createFor(tenantGit.getUri(), tenantGit.getUserName(), tenantGit.getPassword(),
                 tenantGit.getPassphrase(), this.isSkipSslValidation());
+
+        return credentials;
     }
 
     private boolean isClean(Git git, String label) {
@@ -729,9 +710,9 @@ public class GitEnvironmentRepository {
      * destroy dir .
      */
     public void destroy() {
-        if (localRepoFolder.exists()) {
+        if (configRepoFolder.exists()) {
             try {
-                FileUtils.delete(localRepoFolder, FileUtils.RECURSIVE);
+                FileUtils.delete(configRepoFolder, FileUtils.RECURSIVE);
             } catch (IOException e) {
                 LOGGER.error("destroy_error : " + this.getConfigRepoPath(), e);
                 throw NacosGitException.createException(GitResponseEnum.sys_error.info("git dir is busy!"));

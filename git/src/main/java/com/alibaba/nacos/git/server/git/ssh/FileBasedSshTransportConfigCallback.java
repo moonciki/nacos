@@ -17,7 +17,7 @@
 package com.alibaba.nacos.git.server.git.ssh;
 
 import com.jcraft.jsch.Session;
-import com.alibaba.nacos.git.server.git.env.GitEnvironmentProperties;
+import com.alibaba.nacos.git.server.jgit.env.JgitConfigProperty;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
 import org.eclipse.jgit.transport.OpenSshConfig;
@@ -33,9 +33,9 @@ import org.eclipse.jgit.transport.Transport;
  */
 public class FileBasedSshTransportConfigCallback implements TransportConfigCallback {
 
-    private GitEnvironmentProperties gitEnvironmentProperties;
+    private JgitConfigProperty gitEnvironmentProperties;
 
-    public FileBasedSshTransportConfigCallback(GitEnvironmentProperties gitEnvironmentProperties) {
+    public FileBasedSshTransportConfigCallback(JgitConfigProperty gitEnvironmentProperties) {
         this.gitEnvironmentProperties = gitEnvironmentProperties;
     }
 

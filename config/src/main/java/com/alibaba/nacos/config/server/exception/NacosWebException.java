@@ -25,7 +25,7 @@ import com.alibaba.nacos.config.server.result.code.ResultCodeEnum;
  */
 public class NacosWebException extends RuntimeException {
 
-    private Integer errorCode;
+    private Integer errorCode = 500;
 
     private String errorMsg;
 
@@ -37,16 +37,12 @@ public class NacosWebException extends RuntimeException {
         return errorMsg;
     }
 
-    protected NacosWebException(String msg) {
-        super(msg);
+    protected NacosWebException(String errorMsg) {
+        super(errorMsg);
     }
 
     protected NacosWebException(Throwable te) {
         super(te);
-    }
-
-    protected NacosWebException(String message, Throwable cause) {
-        super(message, cause);
     }
 
     protected void initException(WebCode error) {
@@ -55,8 +51,17 @@ public class NacosWebException extends RuntimeException {
         }
 
         this.errorCode = error.getCode();
-        this.errorMsg = errorMsg;
+        this.errorMsg = error.getMsg();
 
+    }
+
+    /**
+     * 创建捕获到的异常.
+     * @return NacosWebException
+     */
+    public static NacosWebException createException() {
+        NacosWebException oe = createException(ResultCodeEnum.ERROR.info());
+        return oe;
     }
 
     /**
@@ -76,15 +81,6 @@ public class NacosWebException extends RuntimeException {
         ne.initException(webCode);
 
         return ne;
-    }
-
-    /**
-     * 创建捕获到的异常.
-     * @return NacosWebException
-     */
-    public static NacosWebException createException() {
-        NacosWebException oe = createException(ResultCodeEnum.ERROR.info());
-        return oe;
     }
 
     /**
@@ -117,7 +113,7 @@ public class NacosWebException extends RuntimeException {
         Integer errorCode = ne.getErrorCode();
         String errorMsg = ne.getErrorMsg();
 
-        RestResult resp = new RestResult(errorCode, errorMsg);
+        RestResult resp = new RestResult(errorCode, errorMsg, null);
 
         return resp;
     }

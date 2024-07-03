@@ -16,8 +16,6 @@
 
 package com.alibaba.nacos.config.server.exception;
 
-import com.alibaba.nacos.config.server.result.code.ResultCodeEnum;
-
 /**
  * 返回码类.
  * @author yueshiqi
@@ -51,11 +49,6 @@ public class WebCode {
     }
 
     public WebCode() {
-    }
-
-    public WebCode(ResultCodeEnum codeEnum) {
-        this.code = codeEnum.getCode();
-        this.msg = codeEnum.getCodeMsg();
     }
 
     public WebCode(Integer code, String msg) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.service;
+package com.alibaba.nacos.git.server.service.git;
 
 import com.alibaba.nacos.config.server.vo.ConfigImportResultVo;
 import com.alibaba.nacos.git.server.vo.GitCommitStatus;

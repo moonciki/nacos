@@ -124,7 +124,7 @@
     </Logger>
     
     <logger name="com.alibaba.nacos.client.config" level="${nacosConfigLogLevel}"
-        additivity="false">
+        additivity="true">
         <appender-ref ref="ASYNC-CONFIG"/>
     </logger>
     

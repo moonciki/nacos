@@ -17,6 +17,7 @@
 package com.alibaba.nacos.git.server.exception;
 
 import com.alibaba.nacos.config.server.exception.NacosWebException;
+import com.alibaba.nacos.git.server.enums.GitResponseEnum;
 
 /**
  * git exception .
@@ -25,8 +26,30 @@ import com.alibaba.nacos.config.server.exception.NacosWebException;
  */
 public class NacosGitException extends NacosWebException {
 
-    public NacosGitException(String message, Throwable cause) {
-        super(message, cause);
+    public NacosGitException(String errorMsg) {
+        super(errorMsg);
+    }
+
+    public NacosGitException(Throwable te) {
+        super(te);
+    }
+
+    /**
+     * 创建捕获到的异常.
+     * @param message message
+     * @param t t
+     * @return NacosWebException
+     */
+    public static NacosGitException createException(String message, Throwable t) {
+        NacosGitException oe = null;
+        if (t instanceof NacosGitException) {
+            oe = (NacosGitException) t;
+        } else {
+            oe = new NacosGitException(t);
+            oe.initException(GitResponseEnum.git_error.info(message));
+        }
+
+        return oe;
     }
 
 }

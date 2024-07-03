@@ -1,11 +1,11 @@
 /*
- * Copyright 2018-2019 the original author or authors.
+ * Copyright 1999-2021 Alibaba Group Holding Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,37 +14,23 @@
  * limitations under the License.
  */
 
-package com.alibaba.nacos.git.server.git.env;
+package com.alibaba.nacos.git.server.jgit.env;
 
 import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.common.utils.StringUtils;
 import com.alibaba.nacos.git.server.model.TenantGit;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * jgit advinceConfigure.
- * @author Dylan Roberts
- * @author Gareth Clay
- * @author Shiqi Yue
+ * jgit config property.
+ * @author yueshiqi
  */
-public class GitEnvironmentProperties {
+public class JgitConfigProperty {
 
-    @Deprecated
+    /** ========== base config ========== **/
     private String uri;
 
-    /**
-     * Timeout (in seconds) for obtaining HTTP or SSH connection (if applicable), defaults
-     * to 5 seconds.
-     */
-    private int timeout = 5;
-
-    /**
-     * Flag to indicate that SSL certificate validation should be bypassed when
-     * communicating with a repository served over an HTTPS connection.
-     */
-    private boolean skipSslValidation = false;
+    private String userName;
+    private String password;
 
     /**
      * Valid SSH private key. Must be set if ignoreLocalSshSettings is true and Git URI is
@@ -56,6 +42,25 @@ public class GitEnvironmentProperties {
      * ssh passphrase.
      */
     private String passphrase;
+
+    /** ========== advance_configure ========== **/
+
+    /**
+     * If true, use property-based instead of file-based SSH config.
+     */
+    private boolean ignoreLocalSshSettings;
+
+    /**
+     * Timeout (in seconds) for obtaining HTTP or SSH connection (if applicable), defaults
+     * to 5 seconds.
+     */
+    private int timeout = 5;
+
+    /**
+     * Flag to indicate that SSL certificate validation should be bypassed when
+     * communicating with a repository served over an HTTPS connection.
+     */
+    private boolean skipSslValidation = true;
 
     /**
      * One of ssh-dss, ssh-rsa, ecdsa-sha2-nistp256, ecdsa-sha2-nistp384, or
@@ -92,11 +97,6 @@ public class GitEnvironmentProperties {
      */
     private int protocolVersion = 1;
 
-    /**
-     * HTTP proxy configuration.
-     */
-    private Map<ProxyHostProperties.ProxyForScheme, ProxyHostProperties> proxy = new HashMap<>();
-
     public String getUri() {
         return uri;
     }
@@ -105,16 +105,24 @@ public class GitEnvironmentProperties {
         this.uri = uri;
     }
 
-    public int getTimeout() {
-        return this.timeout;
+    public String getUserName() {
+        return userName;
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getPrivateKey() {
-        return this.privateKey;
+        return privateKey;
     }
 
     public void setPrivateKey(String privateKey) {
@@ -129,8 +137,32 @@ public class GitEnvironmentProperties {
         this.passphrase = passphrase;
     }
 
+    public boolean isIgnoreLocalSshSettings() {
+        return ignoreLocalSshSettings;
+    }
+
+    public void setIgnoreLocalSshSettings(boolean ignoreLocalSshSettings) {
+        this.ignoreLocalSshSettings = ignoreLocalSshSettings;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public boolean isSkipSslValidation() {
+        return skipSslValidation;
+    }
+
+    public void setSkipSslValidation(boolean skipSslValidation) {
+        this.skipSslValidation = skipSslValidation;
+    }
+
     public String getHostKeyAlgorithm() {
-        return this.hostKeyAlgorithm;
+        return hostKeyAlgorithm;
     }
 
     public void setHostKeyAlgorithm(String hostKeyAlgorithm) {
@@ -138,7 +170,7 @@ public class GitEnvironmentProperties {
     }
 
     public String getHostKey() {
-        return this.hostKey;
+        return hostKey;
     }
 
     public void setHostKey(String hostKey) {
@@ -146,7 +178,7 @@ public class GitEnvironmentProperties {
     }
 
     public String getKnownHostsFile() {
-        return this.knownHostsFile;
+        return knownHostsFile;
     }
 
     public void setKnownHostsFile(String knownHostsFile) {
@@ -154,7 +186,7 @@ public class GitEnvironmentProperties {
     }
 
     public String getPreferredAuthentications() {
-        return this.preferredAuthentications;
+        return preferredAuthentications;
     }
 
     public void setPreferredAuthentications(String preferredAuthentications) {
@@ -162,7 +194,7 @@ public class GitEnvironmentProperties {
     }
 
     public boolean isStrictHostKeyChecking() {
-        return this.strictHostKeyChecking;
+        return strictHostKeyChecking;
     }
 
     public void setStrictHostKeyChecking(boolean strictHostKeyChecking) {
@@ -177,39 +209,26 @@ public class GitEnvironmentProperties {
         this.protocolVersion = protocolVersion;
     }
 
-    public boolean isSkipSslValidation() {
-        return this.skipSslValidation;
-    }
-
-    public void setSkipSslValidation(boolean skipSslValidation) {
-        this.skipSslValidation = skipSslValidation;
-    }
-
-    public Map<ProxyHostProperties.ProxyForScheme, ProxyHostProperties> getProxy() {
-        return this.proxy;
-    }
-
-    public void setProxy(Map<ProxyHostProperties.ProxyForScheme, ProxyHostProperties> proxy) {
-        this.proxy = proxy;
-    }
-
     /**
      * load git advanceConfigure properties.
      * @param tenantGit tenantGit
      * @return JGitEnvironmentProperties
      */
-    public static GitEnvironmentProperties loadProperties(TenantGit tenantGit) {
+    public static JgitConfigProperty loadProperties(TenantGit tenantGit) {
 
         String advanceConfigure = tenantGit.getAdvanceConfigure();
 
-        GitEnvironmentProperties jgitEnv = null;
+        JgitConfigProperty jgitEnv = null;
 
         if (StringUtils.isBlank(advanceConfigure)) {
-            jgitEnv = new GitEnvironmentProperties();
+            jgitEnv = new JgitConfigProperty();
         } else {
-            jgitEnv = JacksonUtils.toObj(advanceConfigure, GitEnvironmentProperties.class);
+            jgitEnv = JacksonUtils.toObj(advanceConfigure, JgitConfigProperty.class);
         }
 
+        jgitEnv.setUri(tenantGit.getUri());
+        jgitEnv.setUserName(tenantGit.getUserName());
+        jgitEnv.setPassword(tenantGit.getPassword());
         jgitEnv.setPrivateKey(tenantGit.getPrivateKey());
         jgitEnv.setPassphrase(tenantGit.getPassphrase());
         //jgitEnv.setHostKeyAlgorithm("ssh-rsa");

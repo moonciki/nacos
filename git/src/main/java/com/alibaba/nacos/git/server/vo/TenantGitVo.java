@@ -99,6 +99,21 @@ public class TenantGitVo {
     private String advanceConfigure;
 
     /**
+     * 保留原来的密码.
+     */
+    private Integer passwordKeep;
+
+    /**
+     * 保留原来的私钥口令.
+     */
+    private Integer passphraseKeep;
+
+    /**
+     * 保留原来的git私钥.
+     */
+    private Integer privateKeyKeep;
+
+    /**
      * 登录方式 (1用户名密码；2私钥).
      */
     private Integer authType;
@@ -221,6 +236,30 @@ public class TenantGitVo {
 
     public void setAdvanceConfigure(String advanceConfigure) {
         this.advanceConfigure = advanceConfigure;
+    }
+
+    public Integer getPasswordKeep() {
+        return passwordKeep;
+    }
+
+    public void setPasswordKeep(Integer passwordKeep) {
+        this.passwordKeep = passwordKeep;
+    }
+
+    public Integer getPassphraseKeep() {
+        return passphraseKeep;
+    }
+
+    public void setPassphraseKeep(Integer passphraseKeep) {
+        this.passphraseKeep = passphraseKeep;
+    }
+
+    public Integer getPrivateKeyKeep() {
+        return privateKeyKeep;
+    }
+
+    public void setPrivateKeyKeep(Integer privateKeyKeep) {
+        this.privateKeyKeep = privateKeyKeep;
     }
 
     public Integer getAuthType() {

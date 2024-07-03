@@ -22,7 +22,7 @@ import com.alibaba.nacos.config.server.exception.WebCode;
  * web code enum.
  * @author yueshiqi
  */
-public enum ResponseEnum {
+public enum GitResponseEnum {
     /**
      * success.
      */
@@ -46,7 +46,9 @@ public enum ResponseEnum {
     /**
      * 系统繁忙.
      */
-    sys_busy(502, "系统繁忙");
+    sys_busy(502, "系统繁忙"),
+
+    git_error(60001, "git 命令执行错误");
 
     /**
      * resp code.
@@ -66,7 +68,7 @@ public enum ResponseEnum {
         return msg;
     }
 
-    ResponseEnum(Integer code, String msg) {
+    GitResponseEnum(Integer code, String msg) {
         this.code = code;
         this.msg = msg;
     }
